@@ -1,6 +1,6 @@
 [package]
 name = "pinecone-rs"
-version = "0.1.3"
+version = "0.1.4"
 authors=["Abimalek Mekuriya", "Adrien Wald"]
 documentation = "https://docs.rs/pinecone-rs"
 repository = "https://github.com/adri1wald/pinecone-rs"
