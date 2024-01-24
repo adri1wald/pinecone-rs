@@ -160,7 +160,8 @@ mod client_test {
         match client.create_index(IndexCreateRequest{
             name: env!("PINECONE_INDEX_NAME").to_string(),
             dimension: 32,
-            metric: Metric::EUCLIDEAN.to_string()
+            metric: Metric::EUCLIDEAN,
+            ..Default::default()
         }).await {
             Ok(_) => assert!(true),
             Err(error) => {

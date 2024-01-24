@@ -5,23 +5,23 @@
 //! notice a breaking change.
 
 use core::fmt;
-use std::collections::{HashMap, BTreeMap};
+use std::collections::{BTreeMap, HashMap};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// The distance metric used for similarity search.
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub enum Metric {
     /// Euclidian Distance.
-    #[serde(rename="euclidean")]
-    #[default]
+    #[serde(rename = "euclidean")]
     EUCLIDEAN,
     /// Cosine Similarity
-    #[serde(rename="cosine")]
+    #[serde(rename = "cosine")]
+    #[default]
     COSINE,
     /// Dot Product Similarity
-    #[serde(rename="dotproduct")]
-    DOTPRODUCT
+    #[serde(rename = "dotproduct")]
+    DOTPRODUCT,
 }
 
 impl fmt::Display for Metric {
@@ -29,7 +29,68 @@ impl fmt::Display for Metric {
         match self {
             Metric::EUCLIDEAN => write!(f, "euclidean"),
             Metric::COSINE => write!(f, "cosine"),
-            Metric::DOTPRODUCT => write!(f, "dotproduct")
+            Metric::DOTPRODUCT => write!(f, "dotproduct"),
+        }
+    }
+}
+
+/// The pod type for the index.
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub enum PodType {
+    /// s1.x1
+    #[serde(rename = "s1.x1")]
+    S1X1,
+    /// s1.x2
+    #[serde(rename = "s1.x2")]
+    S1X2,
+    /// s1.x4
+    #[serde(rename = "s1.x4")]
+    S1X4,
+    /// s1.x8
+    #[serde(rename = "s1.x8")]
+    S1X8,
+    /// p1.x1
+    #[serde(rename = "p1.x1")]
+    #[default]
+    P1X1,
+    /// p1.x2
+    #[serde(rename = "p1.x2")]
+    P1X2,
+    /// p1.x4
+    #[serde(rename = "p1.x4")]
+    P1X4,
+    /// p1.x8
+    #[serde(rename = "p1.x8")]
+    P1X8,
+    /// p2.x1
+    #[serde(rename = "p2.x1")]
+    P2X1,
+    /// p2.x2
+    #[serde(rename = "p2.x2")]
+    P2X2,
+    /// p2.x4
+    #[serde(rename = "p2.x4")]
+    P2X4,
+    /// p2.x8
+    #[serde(rename = "p2.x8")]
+    P2X8,
+}
+
+impl fmt::Display for PodType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PodType::S1X1 => write!(f, "s1.x1"),
+            PodType::S1X2 => write!(f, "s1.x2"),
+            PodType::S1X4 => write!(f, "s1.x4"),
+            PodType::S1X8 => write!(f, "s1.x8"),
+            PodType::P1X1 => write!(f, "p1.x1"),
+            PodType::P1X2 => write!(f, "p1.x2"),
+            PodType::P1X4 => write!(f, "p1.x4"),
+            PodType::P1X8 => write!(f, "p1.x8"),
+            PodType::P2X1 => write!(f, "p2.x1"),
+            PodType::P2X2 => write!(f, "p2.x2"),
+            PodType::P2X4 => write!(f, "p2.x4"),
+            PodType::P2X8 => write!(f, "p2.x8"),
         }
     }
 }
@@ -43,19 +104,19 @@ pub struct ClientInfo {
     /// Name of clients user label
     pub user_label: String,
     /// Clients username
-    pub user_name: String
+    pub user_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub(crate) struct CreateCollectionRequest {
     pub(super) name: String,
-    pub(super) source: String
+    pub(super) source: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub(crate) struct VectorRequest {
     pub(super) namespace: String,
-    pub(super) vectors: Vec<Vector>
+    pub(super) vectors: Vec<Vector>,
 }
 
 /// Details the generic pinecone error response sent during index operations.
@@ -69,8 +130,15 @@ pub struct PineconeErrorResponse {
     ///
     /// Actual value of this is unkown at this time and if anyone knows please create an Issue so I
     /// can properly implement this type!
-    pub details: Vec<MappedValue>
-    //TODO: implement the details field
+    pub details: Vec<MappedValue>, //TODO: implement the details field
+}
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+/// Configuration for the behavior of Pinecone's internal metadata index.
+/// By default, all metadata is indexed; when `metadata_config` is present, only specified metadata fields are indexed.
+pub struct IndexMetadataConfig {
+    /// List of metadata fields to index.
+    pub indexed: Vec<String>,
 }
 
 /// Request sent to pinecone for the creation of an Index.
@@ -81,7 +149,24 @@ pub struct IndexCreateRequest {
     /// The dimension for the vectors stored within the index.
     pub dimension: usize,
     /// The metric for the Index, all the options for this are detailed in [`Metric`].
-    pub metric: String
+    pub metric: Metric,
+    /// The pod type for the index, all the options for this are detailed in [`PodType`].
+    pub pod_type: PodType,
+    /// The number of pods for the index.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pods: Option<usize>,
+    /// The number of replicas for the index.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub replicas: Option<usize>,
+    /// The number of shards for the index.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub shards: Option<usize>,
+    /// The configuration for the metadata index.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub metadata_config: Option<IndexMetadataConfig>,
+    /// The name of the collection to create an index from
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source_collection: Option<String>,
 }
 
 /// Details information about an individual namespace, found in [`IndexStats`].
@@ -89,7 +174,7 @@ pub struct IndexCreateRequest {
 pub struct Namespace {
     /// The number of vectors int he namespace.
     #[serde(rename = "vectorCount")]
-    pub vector_count: usize
+    pub vector_count: usize,
 }
 
 /// Request sent to change the settings / details of an index.
@@ -99,7 +184,7 @@ pub struct ConfigureIndexRequest {
     pub replicas: usize,
     /// The new pod type for the index. One of s1, p1, or p2 appended with . and one of x1, x2, x4, or
     /// x8.
-    pub pod_type: String
+    pub pod_type: String,
 }
 
 /// The stats / information about an index, this is different information compared to
@@ -111,11 +196,11 @@ pub struct IndexStats {
     /// Dimension of vectors within the index.
     pub dimension: usize,
     /// Index Fullness.
-    #[serde(rename= "indexFullness")]
+    #[serde(rename = "indexFullness")]
     pub index_fullness: u32,
     /// Total number of vectors within the index.
     #[serde(rename = "totalVectorCount")]
-    pub total_vector_count: u32
+    pub total_vector_count: u32,
 }
 
 /// Vector sparse data. Represented as a list of indeices and a list of corresponded values, which
@@ -125,16 +210,16 @@ pub struct SparseValues {
     /// Indecies.
     pub indeces: Vec<u32>,
     /// Values.
-    pub values: Vec<f32>
+    pub values: Vec<f32>,
 }
 
 /// Pinecones data sent during the succesfull Fetch Request.
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-pub struct FetchResponse{
+pub struct FetchResponse {
     /// A map of Vector IDs to Vectors
     pub vectors: BTreeMap<String, Vector>,
     /// The namespace. This might be empty if no namespace was specified.
-    pub namespace: String
+    pub namespace: String,
 }
 
 /// A value representing a map from a string to a currently unknown value, as the value of these is
@@ -149,10 +234,10 @@ pub struct UpdateRequest {
     /// Values to change it to
     pub values: Option<Vec<f32>>,
     /// New Sparse values to update
-    #[serde(rename="sparseValues")]
+    #[serde(rename = "sparseValues")]
     pub sparse_values: Option<SparseValues>,
     /// New metadata values.
-    #[serde(rename="setMetadata")]
+    #[serde(rename = "setMetadata")]
     pub metadata: Option<MappedValue>,
     /// Namespace to run this operation on, empty namespace can be used if you would like to run it
     /// on the whole index.
@@ -169,7 +254,7 @@ pub struct Vector {
     /// The sparse values the vector should hold.
     pub sparse_values: Option<SparseValues>,
     /// Vector metadata that can be used during queries.
-    pub metadata: Option<MappedValue>
+    pub metadata: Option<MappedValue>,
 }
 
 /// Data type detailing the search of a namespace using a query vector.
@@ -178,24 +263,24 @@ pub struct QueryRequest {
     /// The namespace to query.
     pub namespace: Option<String>,
     /// Number of values to search for. This number cannot be 0 or negative.
-    #[serde(rename="topK")]
-    pub top_k: usize, 
+    #[serde(rename = "topK")]
+    pub top_k: usize,
     /// The filter to apply. You can use vector metadata to limit your search. See [Metadat
     /// Filtering](https://www.pinecone.io/docs/metadata-filtering/)
     pub filter: Option<BTreeMap<String, serde_json::Value>>,
     /// Whether vector values should be included in the response
-    #[serde(rename="includeValues")]
+    #[serde(rename = "includeValues")]
     pub include_values: bool,
     /// Whether metadata should be included in the response
-    #[serde(rename="includeMetadata")]
+    #[serde(rename = "includeMetadata")]
     pub include_metadata: bool,
     /// Vector value if include_values was true
     pub vector: Option<Vec<f32>>,
     /// Vector Sparse Data.
-    #[serde(rename="sparseVectors")]
+    #[serde(rename = "sparseVectors")]
     pub sparse_vector: Option<SparseValues>,
     /// The unique id of the vector to be used as a query vector.
-    pub id: Option<String>
+    pub id: Option<String>,
 }
 
 /// Response Returned during a query operation.
@@ -204,7 +289,7 @@ pub struct QueryResponse {
     /// All the matched values
     pub matches: Vec<Match>,
     /// namespace this operation was done under
-    pub namespace: String
+    pub namespace: String,
 }
 
 /// Match is a specific match under a Query Request.
@@ -218,10 +303,10 @@ pub struct Match {
     /// The vector values.
     pub values: Option<Vec<f32>>,
     /// Vector Sparse Data.
-    #[serde(rename="sparseValues")]
+    #[serde(rename = "sparseValues")]
     pub sparse_values: Option<SparseValues>,
     /// The vector metadata.
-    pub metadata: Option<MappedValue>
+    pub metadata: Option<MappedValue>,
 }
 
 /// Detailing parameters for an operation that looks up and returns vector by ID.
@@ -230,11 +315,10 @@ pub struct FetchRequest {
     /// Ids to search for
     pub ids: Vec<String>,
     /// Namespace to search for these vectors
-    pub namespace: Option<String>
+    pub namespace: Option<String>,
 }
 
 impl FetchRequest {
-
     pub(crate) fn url(self, base: impl Into<String>) -> String {
         let mut url: String = base.into();
         url.push_str("/vectors/fetch?");
@@ -256,7 +340,7 @@ pub struct IndexDescription {
     /// Specific Index Information.
     pub database: IndexDatabaseDescription,
     /// Current status of the index.
-    pub status: IndexStatusDescription 
+    pub status: IndexStatusDescription,
 }
 
 /// Details the configuration of the index.
@@ -284,7 +368,7 @@ pub struct DescribeIndexConfig {
     /// k bits.
     pub k_bits: usize,
     /// Hybrid.
-    pub hybrid: bool
+    pub hybrid: bool,
 }
 
 /// Describes the Status of an Index
@@ -320,11 +404,10 @@ pub enum DescribeStatusState {
     /// Ready.
     Ready,
     /// InitializationFailed.
-    InitializationFailed
+    InitializationFailed,
 }
 
 impl fmt::Display for DescribeStatusState {
-
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             DescribeStatusState::Initializing => write!(f, "Initializing"),
@@ -332,7 +415,7 @@ impl fmt::Display for DescribeStatusState {
             DescribeStatusState::ScalingDown => write!(f, "ScalingDown"),
             DescribeStatusState::Terminating => write!(f, "Terminating"),
             DescribeStatusState::Ready => write!(f, "Ready"),
-            DescribeStatusState::InitializationFailed => write!(f, "InitializationFailed")
+            DescribeStatusState::InitializationFailed => write!(f, "InitializationFailed"),
         }
     }
 }
@@ -345,7 +428,7 @@ pub struct CollectionDescription {
     /// Collection size.
     pub size: usize,
     /// Status of the collection.
-    pub status: String
+    pub status: String,
 }
 
 /// Response from an upsert request sending data to the Index.
@@ -353,5 +436,5 @@ pub struct CollectionDescription {
 pub struct UpsertResponse {
     /// Number of vectors upserted.
     #[serde(rename = "upsertedCount")]
-    pub upserted_count: usize
+    pub upserted_count: usize,
 }
