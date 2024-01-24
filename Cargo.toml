@@ -1,10 +1,10 @@
 [package]
-name = "pinenut"
+name = "pinecone-rs"
 version = "0.1.3"
-authors=["Abimalek Mekuriya"]
-documentation = "https://docs.rs./pinenut"
-repository = "https://github.com/abimek/pinenut"
-homepage = "https://github.com/abimek/pinenut"
+authors=["Abimalek Mekuriya", "Adrien Wald"]
+documentation = "https://docs.rs/pinecone-rs"
+repository = "https://github.com/adri1wald/pinecone-rs"
+homepage = "https://github.com/adri1wald/pinecone-rs"
 description = "Pinecone Client for Rust"
 license = "Apache-2.0 OR MIT"
 edition = "2021"
